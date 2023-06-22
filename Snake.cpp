@@ -4,7 +4,7 @@
 Snake::Snake(std::shared_ptr<Context>& context) 
 	:Size(50.f, 50.f), SnakeDir{1},
 	Segments{}, SContext{context}, Score{0}, Self_collision{false}, 
-	MoveTime{ sf::Time::Zero }, MoveInterval{ sf::seconds(0.1f) }, Food{50.f}
+	MoveTime{ sf::Time::Zero }, MoveInterval{ sf::seconds(0.1f) }, Food{}, Position{0, 0}
 {
 	this->Init();
 }
@@ -12,6 +12,9 @@ Snake::Snake(std::shared_ptr<Context>& context)
 void Snake::Init()
 {
 	this->Segments.push_back(std::shared_ptr<sf::Vector2i>(new sf::Vector2i(this->SContext->Width / 2, this->SContext->Height / 2)));
+	this->Food.setRadius(this->SContext->GridSize / 2);
+	this->Food.setFillColor(sf::Color::Blue);
+	this->FoodPos();
 }
 
 void Snake::Input()
@@ -66,6 +69,7 @@ void Snake::Draw()
 		this->snake_Collision(Shape);
 		this->SContext->Window->draw(Shape);
 	}
+	this->SContext->Window->draw(this->Food);
 	this->SContext->Window->display();
 }
 
@@ -98,9 +102,9 @@ void Snake::snake_Movement()
 	break;
 		}
 	}
-	for (int cum = this->Segments.size() - 1; cum > 0; --cum)
+	for (int i = this->Segments.size() - 1; i > 0; --i)
 	{
-		this->Segments[cum] = this->Segments[cum - 1];
+		this->Segments[i] = this->Segments[i - 1];
 	}
 
 	this->Segments[0] = NewPos;
@@ -111,26 +115,25 @@ void Snake::snake_Collision(sf::RectangleShape& rect)
 	if (rect.getPosition().x >= this->SContext->Window->getSize().x)
 	{
 		SContext->States->AddState(std::make_unique<GameOver>(SContext), true);
-	} 
+	}
 	if (rect.getPosition().x < 0)
 	{
-		rect.setPosition(0, rect.getPosition().y);
+		SContext->States->AddState(std::make_unique<GameOver>(SContext), true);
 	}
 	if (rect.getPosition().y >= this->SContext->Window->getSize().y)
 	{
-		rect.setPosition(this->SContext->Window->getSize().x, rect.getPosition().y);
+		SContext->States->AddState(std::make_unique<GameOver>(SContext), true);
 	}
 	if (rect.getPosition().y < 0)
 	{
-		this->ChangeDir(2);
-	} 
-
-
-
+		SContext->States->AddState(std::make_unique<GameOver>(SContext), true);
+	}
+	if (rect.getGlobalBounds().intersects(this->Food.getGlobalBounds()))
+	{
+		this->AddSeg();
+		this->FoodPos();
+	}
 }
-
-
-
 
 void Snake::ChangeDir(int NewDir)
 {
@@ -143,3 +146,15 @@ void Snake::ChangeDir(int NewDir)
 	}
 }
 
+void Snake::FoodPos()
+{
+	int x = rand() % this->SContext->Width * this->SContext->GridSize;
+	int y = rand() % this->SContext->Height * this->SContext->GridSize;
+
+	this->Food.setPosition(x, y);
+}
+
+void Snake::AddSeg()
+{
+	this->Segments.push_back(std::shared_ptr<sf::Vector2i>(new sf::Vector2i(this->SContext->Width / 2, this->SContext->Height / 2)));
+}

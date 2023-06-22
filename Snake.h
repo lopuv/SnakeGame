@@ -2,6 +2,8 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include <memory>
+#include <iostream>
+#include <algorithm>
 #include "Snakestate.h"
 #include "GameOver.h"
 #include "Game.h"
@@ -16,6 +18,7 @@ public:
 
 	sf::Vector2f Size;
 	std::vector<std::shared_ptr<sf::Vector2i>> Segments;
+	sf::Vector2i Position;
 
 	int SnakeDir;
 
@@ -38,6 +41,9 @@ public:
 	void snake_Collision(sf::RectangleShape& rect);
 
 	void ChangeDir(int NewDir);
-	
+
+	void FoodPos();
+
+	void AddSeg();
 };
 
