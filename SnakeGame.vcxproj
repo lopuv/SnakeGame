@@ -140,7 +140,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Game.cpp" />
-    <ClCompile Include="GamePlay.cpp" />
+    <ClCompile Include="GameOver.cpp" />
     <ClCompile Include="MainMenu.cpp" />
     <ClCompile Include="sfml.cpp" />
     <ClCompile Include="Snake.cpp" />
@@ -148,7 +148,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Game.h" />
-    <ClInclude Include="GamePlay.h" />
+    <ClInclude Include="GameOver.h" />
     <ClInclude Include="MainMenu.h" />
     <ClInclude Include="Snake.h" />
     <ClInclude Include="Snakestate.h" />

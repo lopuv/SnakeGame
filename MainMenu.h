@@ -4,7 +4,7 @@
 #include <memory>
 #include "Snakestate.h"
 #include "Game.h"
-#include "GamePlay.h"
+#include "Snake.h"
 
 class MainMenu : public Snakestate
 {
