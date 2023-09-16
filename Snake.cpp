@@ -1,17 +1,26 @@
 #include "Snake.h"
 
 
-Snake::Snake(std::shared_ptr<Context>& context) 
-	:Size(50.f, 50.f), SnakeDir{1},
-	Segments{}, SContext{context}, Score{0}, Self_collision{false}, 
-	MoveTime{ sf::Time::Zero }, MoveInterval{ sf::seconds(0.1f) }, Food{}, Position{0, 0}
+Snake::Snake(std::shared_ptr<Context>& context, float StartX,
+	float StartY) 
+	:SContext{ context }, StartX{ StartX }, StartY{StartY}, direction(Direction::Right), Score{ 0 },
+	MoveTime{sf::Time::Zero}, MoveInterval{sf::seconds(0.1f)}, RandNum{0}, direction2(Direction::Down)
 {
-	this->Init();
+	srand(time(NULL));
 }
 
 void Snake::Init()
 {
-	this->Segments.push_back(std::shared_ptr<sf::Vector2i>(new sf::Vector2i(this->SContext->Width / 2, this->SContext->Height / 2)));
+	sf::RectangleShape Block(sf::Vector2f(this->SContext->GridSize, this->SContext->GridSize));
+	Block.setPosition(this->StartX, this->StartY);
+	Block.setFillColor(sf::Color::Red);
+	this->Body.push_back(Block);
+
+	sf::RectangleShape Block2(sf::Vector2f(this->SContext->GridSize, this->SContext->GridSize));
+	Block2.setPosition(0.f, 0.f);
+	Block2.setFillColor(sf::Color::Green);
+	this->Snake2.push_back(Block2);
+
 	this->Food.setRadius(this->SContext->GridSize / 2);
 	this->Food.setFillColor(sf::Color::Blue);
 	this->FoodPos();
@@ -32,19 +41,50 @@ void Snake::Input()
 			switch (event.key.code)
 			{
 			case sf::Keyboard::D:
-				this->ChangeDir(1);
+				this->RandNum = rand() % 3;
+				if (this->direction != Direction::Left)
+				{
+					this->direction = Direction::Right;
+				}
 				break;
 			case sf::Keyboard::S:
-				this->ChangeDir(2);
+				this->RandNum = rand() % 3;
+				if (this->direction != Direction::Up)
+				{
+					this->direction = Direction::Down;
+				}
 				break;
 			case sf::Keyboard::W:
-				this->ChangeDir(4);
+				this->RandNum = rand() % 3;
+				if (this->direction != Direction::Down)
+				{
+					this->direction = Direction::Up;
+				}
 				break;
 			case sf::Keyboard::A:
-				this->ChangeDir(3);
+				this->RandNum = rand() % 3;
+				if (this->direction != Direction::Right)
+				{
+					this->direction = Direction::Left;
+				}
 				break;
 			}
 		}
+	}
+	switch (this->RandNum)
+	{
+	case 0:
+		this->direction2 = Direction::Up;
+	break;
+	case 1:
+		this->direction2 = Direction::Down;
+	break;
+	case 2:
+		this->direction2 = Direction::Left;
+	break;
+	case 3:
+		this->direction2 = Direction::Right;
+	break;
 	}
 }
 
@@ -54,21 +94,35 @@ void Snake::Update(sf::Time Deltatime)
 	if (this->MoveTime >= this->MoveInterval)
 	{
 		this->snake_Movement();
+		this->snake2_Movement();
+
+		this->snake_Collision();
+		this->snake_Collision2();
+
 		this->MoveTime = sf::Time::Zero;
 	}
+	
 }
 
 void Snake::Draw()
 {
-	this->SContext->Window->clear();
-	for (auto& djeno : this->Segments)
+	sf::Text Score;
+	Score.setString("Score: " + std::to_string(this->Score));
+	Score.setFont(this->SContext->Font);
+	Score.setPosition(this->SContext->Window->getSize().x / 2, 10);
+	Score.setCharacterSize(50);
+
+	this->SContext->Window->clear(sf::Color::Black);
+	for (auto &djeno : this->Body)
 	{
-		sf::RectangleShape Shape(sf::Vector2f(this->SContext->GridSize, this->SContext->GridSize));
-		Shape.setPosition(djeno.get()->x * this->SContext->GridSize, djeno.get()->y * SContext->GridSize);
-		Shape.setFillColor(sf::Color::Red);
-		this->snake_Collision(Shape);
-		this->SContext->Window->draw(Shape);
+		this->SContext->Window->draw(djeno);
 	}
+
+	for (auto& i : this->Snake2)
+	{
+		this->SContext->Window->draw(i);
+	}
+	this->SContext->Window->draw(Score);
 	this->SContext->Window->draw(this->Food);
 	this->SContext->Window->display();
 }
@@ -84,65 +138,137 @@ void Snake::Start()
 
 void Snake::snake_Movement()
 {
-	std::shared_ptr<sf::Vector2i> NewPos = this->Segments[0];
-	switch (this->SnakeDir)
+	sf::Vector2f previousTailPosition = this->Body.back().getPosition();
+	sf::RectangleShape Head = this->Body.front();
+	sf::RectangleShape newHead = this->Body.front();
+
+	float x = Head.getPosition().x;
+	float y = Head.getPosition().y;
+
+	switch (this->direction)
 	{
+	case Direction::Up:
+		y -= this->SContext->GridSize;
+		break;
+	case Direction::Down:
+		y += this->SContext->GridSize;
+		break;
+	case Direction::Left:
+		x -= this->SContext->GridSize;
+		break;
+	case Direction::Right:
+		x += this->SContext->GridSize;
+		break;
+	}
+
+	newHead.setPosition(x, y);
+	for (size_t i = 1; i < this->Body.size(); ++i)
+	{
+		if (newHead.getGlobalBounds().intersects(this->Body[i].getGlobalBounds()))
 		{
-	case 1: //Right
-		NewPos.get()->x++;
-	break;
-	case 2: //Down
-		NewPos.get()->y++;
-	break;
-	case 3: //Left
-		NewPos.get()->x--;
-	break;
-	case 4: //Up
-		NewPos.get()->y--;
-	break;
+			this->SContext->States->AddState(std::make_unique<GameOver>(SContext), true);
+		}
+		if (newHead.getGlobalBounds().intersects(this->Snake2[i].getGlobalBounds()))
+		{
+			this->SContext->States->AddState(std::make_unique<GameOver>(SContext), true);
 		}
 	}
-	for (int i = this->Segments.size() - 1; i > 0; --i)
-	{
-		this->Segments[i] = this->Segments[i - 1];
-	}
 
-	this->Segments[0] = NewPos;
+	sf::RectangleShape tail = this->Body.back();
+	tail.setPosition(previousTailPosition);
+	this->Body.insert(this->Body.begin(), tail);
+	this->Body.pop_back();
+
+	this->Body.front() = newHead;
 }
 
-void Snake::snake_Collision(sf::RectangleShape& rect)
+void Snake::snake2_Movement()
 {
-	if (rect.getPosition().x >= this->SContext->Window->getSize().x)
+	sf::Vector2f previousTailPosition = this->Snake2.back().getPosition();
+	sf::RectangleShape Head = this->Snake2.front();
+	sf::RectangleShape newHead = this->Snake2.front();
+
+	float x = Head.getPosition().x;
+	float y = Head.getPosition().y;
+
+	switch (this->direction2)
+	{
+	case Direction::Up:
+		y -= this->SContext->GridSize;
+		break;
+	case Direction::Down:
+		y += this->SContext->GridSize;
+		break;
+	case Direction::Left:
+		x -= this->SContext->GridSize;
+		break;
+	case Direction::Right:
+		x += this->SContext->GridSize;
+		break;
+	}
+
+	newHead.setPosition(x, y);
+	for (size_t i = 1; i < this->Snake2.size(); ++i)
+	{
+		if (newHead.getGlobalBounds().intersects(this->Body[i].getGlobalBounds()))
+		{
+			this->SContext->States->AddState(std::make_unique<GameOver>(SContext), true);
+		}
+	}
+
+	sf::RectangleShape tail = this->Snake2.back();
+	tail.setPosition(previousTailPosition);
+	this->Snake2.insert(this->Snake2.begin(), tail);
+	this->Snake2.pop_back();
+
+	this->Snake2.front() = newHead;
+}
+
+void Snake::snake_Collision()
+{
+	sf::RectangleShape Head = this->Body.front();
+	if (Head.getPosition().x >= this->SContext->Window->getSize().x)
 	{
 		SContext->States->AddState(std::make_unique<GameOver>(SContext), true);
 	}
-	if (rect.getPosition().x < 0)
+	if (Head.getPosition().x < 0)
 	{
 		SContext->States->AddState(std::make_unique<GameOver>(SContext), true);
 	}
-	if (rect.getPosition().y >= this->SContext->Window->getSize().y)
+	if (Head.getPosition().y >= this->SContext->Window->getSize().y)
 	{
 		SContext->States->AddState(std::make_unique<GameOver>(SContext), true);
 	}
-	if (rect.getPosition().y < 0)
+	if (Head.getPosition().y < 0)
 	{
 		SContext->States->AddState(std::make_unique<GameOver>(SContext), true);
 	}
-	if (rect.getGlobalBounds().intersects(this->Food.getGlobalBounds()))
+	if (Head.getGlobalBounds().intersects(this->Food.getGlobalBounds()))
 	{
 		this->AddSeg();
 		this->FoodPos();
+		this->Score++;
 	}
 }
 
-void Snake::ChangeDir(int NewDir)
+void Snake::snake_Collision2()
 {
-	if (NewDir >= 1 && NewDir <= 4)
+	sf::RectangleShape& Head = this->Snake2.front();
+	if (Head.getPosition().x >= this->SContext->Window->getSize().x)
 	{
-		if (std::abs(this->SnakeDir - NewDir) != 2)
-		{
-			this->SnakeDir = NewDir;
-		}
+		Head.setPosition(0, Head.getPosition().y);
+	}
+	if (Head.getPosition().x < 0)
+	{
+		Head.setPosition(this->SContext->Window->getSize().x, Head.getPosition().y);
+	}
+	if (Head.getPosition().y >= this->SContext->Window->getSize().y)
+	{
+		Head.setPosition(Head.getPosition().x, 0);
+	}
+	if (Head.getPosition().y < 0)
+	{
+		Head.setPosition(Head.getPosition().x, this->SContext->Window->getSize().y);
 	}
 }
 
@@ -156,5 +282,19 @@ void Snake::FoodPos()
 
 void Snake::AddSeg()
 {
-	this->Segments.push_back(std::shared_ptr<sf::Vector2i>(new sf::Vector2i(this->SContext->Width / 2, this->SContext->Height / 2)));
+	sf::RectangleShape Tail = this->Body.back();
+	sf::Vector2f TailPos = Tail.getPosition();
+
+	sf::RectangleShape NewSeg(sf::Vector2f(this->SContext->GridSize, this->SContext->GridSize));
+	NewSeg.setPosition(TailPos);
+	NewSeg.setFillColor(sf::Color::Red);
+	this->Body.insert(this->Body.end() - 1, NewSeg);
+
+	sf::RectangleShape Tail2 = this->Snake2.back();
+	sf::Vector2f TailPos2 = Tail2.getPosition();
+
+	sf::RectangleShape NewSeg2(sf::Vector2f(this->SContext->GridSize, this->SContext->GridSize));
+	NewSeg2.setPosition(TailPos2);
+	NewSeg2.setFillColor(sf::Color::Green);
+	this->Snake2.insert(this->Snake2.end() - 1, NewSeg2);
 }

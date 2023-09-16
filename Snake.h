@@ -8,22 +8,31 @@
 #include "GameOver.h"
 #include "Game.h"
 
+enum Direction{Up, Down, Left, Right};
+
 class Snake : public Snakestate
 {
 private:
 	std::shared_ptr<Context> SContext;
 
+	std::vector<sf::RectangleShape> Body;
+
+	std::vector<sf::RectangleShape> Snake2;
+
+	Direction direction;
+
+	Direction direction2;
+
 public:
-	Snake(std::shared_ptr<Context>& context);
+	Snake(std::shared_ptr<Context>& context, 
+		float StartX, float StartY);
 
-	sf::Vector2f Size;
-	std::vector<std::shared_ptr<sf::Vector2i>> Segments;
-	sf::Vector2i Position;
+	float StartX;
+	float StartY;
 
-	int SnakeDir;
+	int RandNum;
 
 	int Score;
-	bool Self_collision;
 
 	sf::Time MoveTime;
 	sf::Time MoveInterval;
@@ -38,9 +47,10 @@ public:
 	void Start() override;
 
 	void snake_Movement();
-	void snake_Collision(sf::RectangleShape& rect);
+	void snake2_Movement();
 
-	void ChangeDir(int NewDir);
+	void snake_Collision();
+	void snake_Collision2();
 
 	void FoodPos();
 

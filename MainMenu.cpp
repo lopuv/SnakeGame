@@ -5,7 +5,6 @@ MainMenu::MainMenu(std::shared_ptr<Context>& context)
 	PlayButtonPressed{false}, ExitButtonSelected{false},
 	ExitButtonPressed{false}
 {
-    this->Init();
 }
 
 MainMenu::~MainMenu()
@@ -104,7 +103,7 @@ void MainMenu::Update(sf::Time deltatime)
 
     if (PlayButtonPressed)
     {
-        MContext->States->AddState(std::make_unique<Snake>(MContext), true);
+        MContext->States->AddState(std::make_unique<Snake>(MContext, 400, 300), true);
     }
     else if (ExitButtonPressed)
     {

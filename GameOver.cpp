@@ -5,7 +5,6 @@ GameOver::GameOver(std::shared_ptr<Context>& context)
 	PlayAgainPressed{false}, ExitSelected{false},
 	ExitPressed{false}
 {
-	this->Init();
 }
 
 GameOver::~GameOver()
@@ -92,7 +91,7 @@ void GameOver::Update(sf::Time Deltatime)
 
 	if (PlayAgainPressed)
 	{
-		this->GOContext->States->AddState(std::make_unique<Snake>(GOContext), true);
+		this->GOContext->States->AddState(std::make_unique<Snake>(GOContext, 400, 300));
 	}
 	else if (ExitPressed)
 	{
